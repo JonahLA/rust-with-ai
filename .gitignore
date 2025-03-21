@@ -1,0 +1,33 @@
+# Ignore target directory (build artifacts)
+target/
+
+# Ignore Cargo.lock if the project is a library
+Cargo.lock
+
+# Ignore editor/IDE specific files
+*.swp
+*.swo
+*.idea/
+.vscode/
+*.iml
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore debug logs and temporary files
+*.log
+*.tmp
+*.bak
+
+# Ignore compiled binaries
+*.exe
+*.out
+*.o
+*.so
+*.dll
+*.dylib
+
+# Ignore coverage reports
+coverage/
+*.profraw

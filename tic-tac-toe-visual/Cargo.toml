@@ -1,0 +1,9 @@
+[package]
+name = "tic-tac-toe-visual"
+version = "0.1.0"
+edition = "2021"
+description = "A graphical Tic-Tac-Toe game implemented in Rust using Bevy."
+license = "MIT"
+
+[dependencies]
+bevy = "0.11"
