@@ -12,5 +12,7 @@ fn main() {
         .add_systems(Startup, game::setup)
         .add_systems(Update, game::handle_clicks)
         .add_systems(Update, game::update_grid)
+        .add_systems(Update, game::handle_restart) // Add restart system
+        .add_systems(Update, game::handle_ai_turn) // Add AI turn system
         .run();
 }

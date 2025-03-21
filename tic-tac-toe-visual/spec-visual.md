@@ -47,7 +47,10 @@ Create a simple, interactive Tic-Tac-Toe game with a graphical interface that al
 
 ## Stretch Goals (Not part of MVP)
 1. **Restart Game**: Add a button or key press to restart the game after it ends.
+   - Pressing the "R" key resets the grid and game state.
 2. **AI Opponent**: Add a single-player mode with an AI opponent.
+   - The AI makes random moves when it's its turn.
+   - The AI plays as Player O.
 3. **Score Tracking**: Keep track of wins, losses, and draws across multiple games.
 4. **Custom Grid Size**: Allow players to choose a grid size (e.g., 4x4, 5x5).
 

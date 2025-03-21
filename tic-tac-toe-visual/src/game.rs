@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use rand::seq::IteratorRandom; // Import for random selection
 
 const GRID_SIZE: usize = 3;
 const CELL_SIZE: f32 = 100.0;
@@ -155,6 +156,60 @@ pub fn update_grid(
 
     if game_state.game_over && !game_state.message_displayed {
         game_state.message_displayed = true; // Set the flag to true
+    }
+}
+
+pub fn handle_restart(
+    keys: Res<Input<KeyCode>>,
+    mut game_state: ResMut<GameState>,
+    mut query: Query<(&Cell, &mut Sprite)>,
+) {
+    if keys.just_pressed(KeyCode::R) {
+        // Reset the game state
+        game_state.grid = [[None; GRID_SIZE]; GRID_SIZE];
+        game_state.current_player = 'X';
+        game_state.game_over = false;
+        game_state.winner = None;
+        game_state.message_displayed = false;
+
+        // Reset the grid visuals
+        for (cell, mut sprite) in query.iter_mut() {
+            sprite.color = if (cell.row + cell.col) % 2 == 0 {
+                Color::rgb(0.9, 0.9, 0.9) // Light grey
+            } else {
+                Color::rgb(0.6, 0.6, 0.6) // Dark grey
+            };
+        }
+    }
+}
+
+pub fn handle_ai_turn(
+    mut game_state: ResMut<GameState>,
+    mut query: Query<&Cell>,
+) {
+    if game_state.game_over || game_state.current_player != 'O' {
+        return; // Skip if the game is over or it's not AI's turn
+    }
+
+    // Find all empty cells
+    let empty_cells: Vec<&Cell> = query
+        .iter()
+        .filter(|cell| game_state.grid[cell.row][cell.col].is_none())
+        .collect();
+
+    // Randomly select an empty cell
+    if let Some(cell) = empty_cells.iter().choose(&mut rand::thread_rng()) {
+        game_state.grid[cell.row][cell.col] = Some('O');
+        game_state.current_player = 'X'; // Switch back to the human player
+
+        // Check for a win or draw after the AI's move
+        if let Some(winner) = check_winner(&game_state.grid) {
+            game_state.game_over = true;
+            game_state.winner = Some(winner);
+        } else if is_draw(&game_state.grid) {
+            game_state.game_over = true;
+            game_state.winner = None;
+        }
     }
 }
 
