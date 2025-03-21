@@ -1,21 +1,22 @@
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow; // Correct import for accessing the primary window
 
 const GRID_SIZE: usize = 3;
 const CELL_SIZE: f32 = 100.0;
 
 #[derive(Component)]
-struct Cell {
+pub struct Cell { // Made public
     row: usize,
     col: usize,
 }
 
 #[derive(Resource)]
-struct GameState {
+pub struct GameState { // Made public
     grid: [[Option<char>; GRID_SIZE]; GRID_SIZE],
     current_player: char,
 }
 
-pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
     commands.spawn(Camera2dBundle::default());
 
     // Initialize game state
@@ -47,14 +48,14 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub fn handle_clicks(
-    mut commands: Commands,
-    windows: Res<Windows>,
+    _commands: Commands, // Prefix with underscore to suppress unused variable warning
+    windows: Query<&Window, With<PrimaryWindow>>, // Use `Query` to access the primary window
     buttons: Res<Input<MouseButton>>,
     mut game_state: ResMut<GameState>,
     query: Query<(&Cell, &Transform)>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
-        if let Some(window) = windows.get_primary() {
+        if let Ok(window) = windows.get_single() { // Get the primary window
             if let Some(cursor_pos) = window.cursor_position() {
                 for (cell, transform) in query.iter() {
                     let cell_pos = transform.translation.truncate();
