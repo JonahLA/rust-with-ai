@@ -23,6 +23,8 @@ Create a simple, interactive Tic-Tac-Toe game with a graphical interface that al
     - Empty cells alternate between light grey and dark grey for visibility.
     - Cells marked with X are red.
     - Cells marked with O are blue.
+- **Winner Banner**: Display a banner above the grid announcing the winner or a draw.
+- **Score Display**: Show the current scores (wins for Player X, Player O, and draws) below the grid.
 - **Player Input**: Allow players to click on a grid cell to place their mark.
   - Input validation: Prevent players from selecting an already occupied cell.
 - **Game Status**: Display the current player's turn and the game result (win/draw) in the console logs.
@@ -52,6 +54,7 @@ Create a simple, interactive Tic-Tac-Toe game with a graphical interface that al
    - The AI makes random moves when it's its turn.
    - The AI plays as Player O.
 3. **Score Tracking**: Keep track of wins, losses, and draws across multiple games.
+   - Display the scores in the console after each game.
 4. **Custom Grid Size**: Allow players to choose a grid size (e.g., 4x4, 5x5).
 
 ---

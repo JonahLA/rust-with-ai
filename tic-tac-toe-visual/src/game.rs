@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy::text::Text2dBundle; // Import for text rendering
 use rand::seq::IteratorRandom; // Import for random selection
 
 const GRID_SIZE: usize = 3;
@@ -11,6 +12,12 @@ pub struct Cell {
     col: usize,
 }
 
+#[derive(Component)]
+pub struct WinnerText; // Marker for the winner banner text
+
+#[derive(Component)]
+pub struct ScoreText; // Marker for the score text
+
 #[derive(Resource)]
 pub struct GameState {
     grid: [[Option<char>; GRID_SIZE]; GRID_SIZE],
@@ -20,7 +27,14 @@ pub struct GameState {
     message_displayed: bool, // Track if the game-over message has been displayed
 }
 
-pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>>) {
+#[derive(Resource)]
+pub struct Score {
+    pub wins_x: u32,
+    pub wins_o: u32,
+    pub draws: u32,
+}
+
+pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>>, asset_server: Res<AssetServer>) {
     // Get the primary window dimensions
     let window = windows.single();
     let _window_width = window.width();
@@ -39,6 +53,13 @@ pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>
         game_over: false,
         winner: None,
         message_displayed: false, // Initialize the flag as false
+    });
+
+    // Initialize score tracking
+    commands.insert_resource(Score {
+        wins_x: 0,
+        wins_o: 0,
+        draws: 0,
     });
 
     // Spawn grid cells, centered on the screen
@@ -73,6 +94,38 @@ pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>
                 .insert(Cell { row, col });
         }
     }
+
+    // Add a text entity for the winner banner
+    commands
+        .spawn(Text2dBundle {
+            text: Text::from_section(
+                "", // Initially empty
+                TextStyle {
+                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"), // Ensure the font path is correct
+                    font_size: 50.0,
+                    color: Color::WHITE,
+                },
+            ),
+            transform: Transform::from_translation(Vec3::new(0.0, 250.0, 1.0)), // Move further above the grid
+            ..default()
+        })
+        .insert(WinnerText);
+
+    // Add a text entity for the score display
+    commands
+        .spawn(Text2dBundle {
+            text: Text::from_section(
+                "Scores: Player X - 0, Player O - 0, Draws - 0", // Initial score
+                TextStyle {
+                    font: asset_server.load("fonts/Fira_Sans/FiraSans-Bold.ttf"),
+                    font_size: 30.0,
+                    color: Color::WHITE,
+                },
+            ),
+            transform: Transform::from_translation(Vec3::new(0.0, -250.0, 1.0)), // Position below the grid
+            ..default()
+        })
+        .insert(ScoreText);
 }
 
 pub fn handle_clicks(
@@ -134,6 +187,7 @@ pub fn handle_clicks(
 
 pub fn update_grid(
     mut game_state: ResMut<GameState>, // Make game_state mutable to update the flag
+    mut score: ResMut<Score>, // Add score resource
     mut query: Query<(&Cell, &mut Sprite)>,
 ) {
     for (cell, mut sprite) in query.iter_mut() {
@@ -155,13 +209,50 @@ pub fn update_grid(
     }
 
     if game_state.game_over && !game_state.message_displayed {
+        if let Some(winner) = game_state.winner {
+            if winner == 'X' {
+                score.wins_x += 1;
+            } else if winner == 'O' {
+                score.wins_o += 1;
+            }
+        } else {
+            score.draws += 1;
+        }
         game_state.message_displayed = true; // Set the flag to true
+    }
+}
+
+pub fn update_winner_text(
+    game_state: Res<GameState>,
+    mut query: Query<&mut Text, With<WinnerText>>,
+) {
+    if game_state.game_over && game_state.message_displayed {
+        if let Ok(mut text) = query.get_single_mut() {
+            if let Some(winner) = game_state.winner {
+                text.sections[0].value = format!("Player {} wins!", winner);
+            } else {
+                text.sections[0].value = "It's a draw!".to_string();
+            }
+        }
+    }
+}
+
+pub fn update_score_text(
+    score: Res<Score>,
+    mut query: Query<&mut Text, With<ScoreText>>,
+) {
+    if let Ok(mut text) = query.get_single_mut() {
+        text.sections[0].value = format!(
+            "Scores: Player X - {}, Player O - {}, Draws - {}",
+            score.wins_x, score.wins_o, score.draws
+        );
     }
 }
 
 pub fn handle_restart(
     keys: Res<Input<KeyCode>>,
     mut game_state: ResMut<GameState>,
+    mut winner_text_query: Query<&mut Text, With<WinnerText>>,
     mut query: Query<(&Cell, &mut Sprite)>,
 ) {
     if keys.just_pressed(KeyCode::R) {
@@ -179,6 +270,11 @@ pub fn handle_restart(
             } else {
                 Color::rgb(0.6, 0.6, 0.6) // Dark grey
             };
+        }
+
+        // Clear the winner banner text
+        if let Ok(mut text) = winner_text_query.get_single_mut() {
+            text.sections[0].value = "".to_string();
         }
     }
 }
@@ -239,4 +335,34 @@ fn check_winner(grid: &[[Option<char>; GRID_SIZE]; GRID_SIZE]) -> Option<char> {
 // Helper function to check for a draw
 fn is_draw(grid: &[[Option<char>; GRID_SIZE]; GRID_SIZE]) -> bool {
     grid.iter().all(|row| row.iter().all(|&cell| cell.is_some()))
+}
+
+pub fn log_game_record(
+    mut game_state: ResMut<GameState>, // Make game_state mutable to reset the flag
+    mut score: ResMut<Score>,         // Make score mutable to ensure it updates only once
+) {
+    if game_state.game_over && !game_state.message_displayed {
+        // Log the game result
+        println!("Game Over!");
+        if let Some(winner) = game_state.winner {
+            println!("Winner: Player {}", winner);
+            if winner == 'X' {
+                score.wins_x += 1; // Increment score for Player X
+            } else if winner == 'O' {
+                score.wins_o += 1; // Increment score for Player O
+            }
+        } else {
+            println!("It's a draw!");
+            score.draws += 1; // Increment draw count
+        }
+
+        // Log the updated scores
+        println!(
+            "Scores: Player X - {}, Player O - {}, Draws - {}",
+            score.wins_x, score.wins_o, score.draws
+        );
+
+        // Set the message_displayed flag to prevent repeated logging
+        game_state.message_displayed = true;
+    }
 }
