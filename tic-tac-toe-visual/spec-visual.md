@@ -55,7 +55,10 @@ Create a simple, interactive Tic-Tac-Toe game with a graphical interface that al
    - The AI plays as Player O.
 3. **Score Tracking**: Keep track of wins, losses, and draws across multiple games.
    - Display the scores in the console after each game.
-4. **Custom Grid Size**: Allow players to choose a grid size (e.g., 4x4, 5x5).
+4. **Custom Grid Size**: Allow players to choose a grid size (e.g., 3x3, 4x4, 5x5).
+   - Add a configuration option to set the grid size before starting the game.
+   - Dynamically adjust the grid, win conditions, and draw conditions to support the chosen size.
+   - Ensure the UI elements (grid, banner, and score display) remain properly positioned regardless of grid size.
 
 ---
 

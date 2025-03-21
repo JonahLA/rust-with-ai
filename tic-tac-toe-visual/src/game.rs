@@ -3,7 +3,6 @@ use bevy::window::PrimaryWindow;
 use bevy::text::Text2dBundle; // Import for text rendering
 use rand::seq::IteratorRandom; // Import for random selection
 
-const GRID_SIZE: usize = 3;
 const CELL_SIZE: f32 = 100.0;
 
 #[derive(Component)]
@@ -20,7 +19,7 @@ pub struct ScoreText; // Marker for the score text
 
 #[derive(Resource)]
 pub struct GameState {
-    grid: [[Option<char>; GRID_SIZE]; GRID_SIZE],
+    grid: Vec<Vec<Option<char>>>, // Dynamic grid size
     current_player: char,
     game_over: bool, // Track if the game is over
     winner: Option<char>, // Track the winner ('X', 'O', or None for a draw)
@@ -34,7 +33,17 @@ pub struct Score {
     pub draws: u32,
 }
 
-pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>>, asset_server: Res<AssetServer>) {
+#[derive(Resource)]
+pub struct GridConfig {
+    pub size: usize, // Configurable grid size
+}
+
+pub fn setup(
+    mut commands: Commands,
+    windows: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+    grid_config: Res<GridConfig>, // Use the grid size from the configuration
+) {
     // Get the primary window dimensions
     let window = windows.single();
     let _window_width = window.width();
@@ -48,7 +57,7 @@ pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>
 
     // Initialize game state
     commands.insert_resource(GameState {
-        grid: [[None; GRID_SIZE]; GRID_SIZE],
+        grid: vec![vec![None; grid_config.size]; grid_config.size], // Dynamic grid size
         current_player: 'X',
         game_over: false,
         winner: None,
@@ -63,13 +72,14 @@ pub fn setup(mut commands: Commands, windows: Query<&Window, With<PrimaryWindow>
     });
 
     // Spawn grid cells, centered on the screen
-    let grid_width = GRID_SIZE as f32 * CELL_SIZE;
-    let grid_height = GRID_SIZE as f32 * CELL_SIZE;
+    let grid_size = grid_config.size;
+    let grid_width = grid_size as f32 * CELL_SIZE;
+    let grid_height = grid_size as f32 * CELL_SIZE;
     let start_x = -grid_width / 2.0 + CELL_SIZE / 2.0;
     let start_y = -grid_height / 2.0 + CELL_SIZE / 2.0;
 
-    for row in 0..GRID_SIZE {
-        for col in 0..GRID_SIZE {
+    for row in 0..grid_size {
+        for col in 0..grid_size {
             // Alternate cell colors for better visibility
             let color = if (row + col) % 2 == 0 {
                 Color::rgb(0.9, 0.9, 0.9) // Light grey
@@ -257,7 +267,7 @@ pub fn handle_restart(
 ) {
     if keys.just_pressed(KeyCode::R) {
         // Reset the game state
-        game_state.grid = [[None; GRID_SIZE]; GRID_SIZE];
+        game_state.grid = vec![vec![None; game_state.grid.len()]; game_state.grid.len()]; // Dynamic grid size
         game_state.current_player = 'X';
         game_state.game_over = false;
         game_state.winner = None;
@@ -310,30 +320,32 @@ pub fn handle_ai_turn(
 }
 
 // Helper function to check for a winner
-fn check_winner(grid: &[[Option<char>; GRID_SIZE]; GRID_SIZE]) -> Option<char> {
+pub fn check_winner(grid: &Vec<Vec<Option<char>>>) -> Option<char> {
+    let size = grid.len();
+
     // Check rows and columns
-    for i in 0..GRID_SIZE {
-        if grid[i][0].is_some() && grid[i][0] == grid[i][1] && grid[i][1] == grid[i][2] {
+    for i in 0..size {
+        if grid[i][0].is_some() && grid[i].iter().all(|&cell| cell == grid[i][0]) {
             return grid[i][0];
         }
-        if grid[0][i].is_some() && grid[0][i] == grid[1][i] && grid[1][i] == grid[2][i] {
+        if grid[0][i].is_some() && (0..size).all(|j| grid[j][i] == grid[0][i]) {
             return grid[0][i];
         }
     }
 
     // Check diagonals
-    if grid[0][0].is_some() && grid[0][0] == grid[1][1] && grid[1][1] == grid[2][2] {
+    if grid[0][0].is_some() && (0..size).all(|i| grid[i][i] == grid[0][0]) {
         return grid[0][0];
     }
-    if grid[0][2].is_some() && grid[0][2] == grid[1][1] && grid[1][1] == grid[2][0] {
-        return grid[0][2];
+    if grid[0][size - 1].is_some() && (0..size).all(|i| grid[i][size - 1 - i] == grid[0][size - 1]) {
+        return grid[0][size - 1];
     }
 
     None // No winner
 }
 
 // Helper function to check for a draw
-fn is_draw(grid: &[[Option<char>; GRID_SIZE]; GRID_SIZE]) -> bool {
+pub fn is_draw(grid: &Vec<Vec<Option<char>>>) -> bool {
     grid.iter().all(|row| row.iter().all(|&cell| cell.is_some()))
 }
 
